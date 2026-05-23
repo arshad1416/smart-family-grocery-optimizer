@@ -244,6 +244,9 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Home Search Location Card
+                    val userCityState by viewModel.userCity.collectAsState()
+                    val userProvinceState by viewModel.userProvince.collectAsState()
+
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -256,26 +259,47 @@ fun OnboardingScreen(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Home Search Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                            Text("Set your coordinates so we can find grocery stores near you.", color = Color.Gray, fontSize = 10.sp)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Home Search Location", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                TextButton(
+                                    onClick = {
+                                        permissionLauncher.launch(
+                                            arrayOf(
+                                                android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                                android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                            )
+                                        )
+                                    },
+                                    contentPadding = PaddingValues(0.dp),
+                                    modifier = Modifier.height(24.dp)
+                                ) {
+                                    Text("Detect Location", color = Color(0xFF6366F1), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            
+                            Text("Provide your city and province to locate grocery stores near you.", color = Color.Gray, fontSize = 10.sp)
 
-                            var latInput by remember(userLatitudeState) { mutableStateOf(userLatitudeState.toString()) }
-                            var lonInput by remember(userLongitudeState) { mutableStateOf(userLongitudeState.toString()) }
+                            var cityInput by remember(userCityState) { mutableStateOf(userCityState) }
+                            var provinceInput by remember(userProvinceState) { mutableStateOf(userProvinceState) }
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 OutlinedTextField(
-                                    value = latInput,
+                                    value = cityInput,
                                     onValueChange = {
-                                        latInput = it
-                                        it.toDoubleOrNull()?.let { lat ->
-                                            viewModel.userLatitude.value = lat
+                                        cityInput = it
+                                        scope.launch {
+                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
                                         }
                                     },
-                                    label = { Text("Latitude") },
-                                    modifier = Modifier.weight(1f),
+                                    label = { Text("City") },
+                                    modifier = Modifier.weight(1.5f),
                                     singleLine = true,
                                     maxLines = 1,
                                     textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
@@ -289,14 +313,14 @@ fun OnboardingScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 OutlinedTextField(
-                                    value = lonInput,
+                                    value = provinceInput,
                                     onValueChange = {
-                                        lonInput = it
-                                        it.toDoubleOrNull()?.let { lon ->
-                                            viewModel.userLongitude.value = lon
+                                        provinceInput = it
+                                        scope.launch {
+                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
                                         }
                                     },
-                                    label = { Text("Longitude") },
+                                    label = { Text("Province") },
                                     modifier = Modifier.weight(1f),
                                     singleLine = true,
                                     maxLines = 1,
@@ -311,18 +335,14 @@ fun OnboardingScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 )
                             }
-
-                            Button(
-                                onClick = {
-                                    viewModel.userLatitude.value = 43.3333
-                                    viewModel.userLongitude.value = -79.8833
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0x1F6366F1)),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.fillMaxWidth().height(36.dp)
-                            ) {
-                                Text("Reset to Waterdown defaults", color = Color(0xFF6366F1), fontSize = 11.sp)
-                            }
+                            
+                            val userLat by viewModel.userLatitude.collectAsState()
+                            val userLon by viewModel.userLongitude.collectAsState()
+                            Text(
+                                text = "Geocoded: ${"%.4f".format(userLat)}, ${"%.4f".format(userLon)}",
+                                color = Color.Gray,
+                                fontSize = 9.sp
+                            )
                         }
                     }
 
