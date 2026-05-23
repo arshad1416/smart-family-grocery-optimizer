@@ -23,16 +23,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.data.model.ListItem
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroceryListScreen(
-    viewModel: GroceryViewModel,
+    listViewModel: ListViewModel,
     modifier: Modifier = Modifier
 ) {
-    val itemsState by viewModel.items.collectAsState()
-    val priceTrendsState by viewModel.priceTrends.collectAsState()
+    val itemsState by listViewModel.items.collectAsState()
+    val priceTrendsState by listViewModel.priceTrends.collectAsState()
     var newItemText by remember { mutableStateOf("") }
     
     // Dialog state for item price details
@@ -75,7 +75,7 @@ fun GroceryListScreen(
             Button(
                 onClick = {
                     if (newItemText.isNotBlank()) {
-                        viewModel.addItem(newItemText)
+                        listViewModel.addItem(newItemText)
                         newItemText = ""
                     }
                 },
@@ -153,7 +153,7 @@ fun GroceryListScreen(
                                 ) {
                                     Checkbox(
                                         checked = item.isCompleted,
-                                        onCheckedChange = { viewModel.toggleItem(item) },
+                                        onCheckedChange = { listViewModel.toggleItem(item) },
                                         colors = CheckboxDefaults.colors(
                                             checkedColor = Color(0xFF10B981),
                                             uncheckedColor = Color.Gray
@@ -201,7 +201,7 @@ fun GroceryListScreen(
                                     
                                     // Delete Item
                                     IconButton(
-                                        onClick = { viewModel.deleteItem(item) },
+                                        onClick = { listViewModel.deleteItem(item) },
                                         modifier = Modifier.size(24.dp)
                                     ) {
                                         Icon(

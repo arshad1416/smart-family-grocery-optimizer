@@ -31,6 +31,8 @@ class Store(Base):
     name = Column(String, unique=True, index=True, nullable=False)
     location = Column(String, nullable=True)
     distance_km = Column(Float, default=0.0)  # Simulating distance from home
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     products = relationship("Product", back_populates="store")
@@ -66,6 +68,7 @@ class GroceryList(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
+    encryption_passphrase = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -98,6 +101,22 @@ class RequestedStore(Base):
     store_name = Column(String, nullable=False)
     address_hint = Column(String, nullable=True)
     requested_at = Column(DateTime, default=datetime.utcnow)
+
+class SyncConfig(Base):
+    __tablename__ = "sync_config"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token_hash = Column(String, unique=True, index=True, nullable=False)
+    passphrase = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class CollaborationInvite(Base):
+    __tablename__ = "collaboration_invites"
+
+    id = Column(Integer, primary_key=True, index=True)
+    invite_code = Column(String, unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 # Initialize database
 def init_db():

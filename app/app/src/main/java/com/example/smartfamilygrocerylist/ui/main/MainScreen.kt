@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -18,22 +17,42 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.ui.screens.*
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     onItemClick: (NavKey) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: GroceryViewModel = viewModel()
+    settingsViewModel: SettingsViewModel = viewModel(),
+    listViewModel: ListViewModel = viewModel(),
+    storeViewModel: StoreViewModel = viewModel(),
+    optimizerViewModel: OptimizerViewModel = viewModel(),
+    scraperViewModel: ScraperViewModel = viewModel()
 ) {
-    var showOnboarding by remember { mutableStateOf(true) }
+    val showOnboarding by settingsViewModel.showOnboarding.collectAsState()
     var selectedTab by remember { mutableStateOf(0) }
+
+    // Coordinate the encryptionKey from settingsViewModel to listViewModel
+    val encryptionKey by settingsViewModel.encryptionKey.collectAsState()
+    LaunchedEffect(encryptionKey) {
+        listViewModel.setEncryptionKey(encryptionKey)
+    }
+
+    // Coordinate location from settingsViewModel to storeViewModel and optimizerViewModel
+    val lat by settingsViewModel.userLatitude.collectAsState()
+    val lon by settingsViewModel.userLongitude.collectAsState()
+    LaunchedEffect(lat, lon) {
+        storeViewModel.setLocation(lat, lon)
+        optimizerViewModel.setLocation(lat, lon)
+    }
 
     if (showOnboarding) {
         OnboardingScreen(
-            viewModel = viewModel,
-            onComplete = { showOnboarding = false }
+            settingsViewModel = settingsViewModel,
+            storeViewModel = storeViewModel,
+            listViewModel = listViewModel,
+            onComplete = { settingsViewModel.completeOnboarding() }
         )
     } else {
         Scaffold(
@@ -143,13 +162,28 @@ fun MainScreen(
                     .padding(innerPadding)
             ) {
                 when (selectedTab) {
-                    0 -> DashboardScreen(viewModel = viewModel)
-                    1 -> GroceryListScreen(viewModel = viewModel)
-                    2 -> PriceHistoryScreen(viewModel = viewModel)
-                    3 -> OptimizerScreen(viewModel = viewModel)
-                    4 -> IntegrationScreen(viewModel = viewModel)
-                    5 -> SubscriptionScreen(viewModel = viewModel)
-                    6 -> SettingsScreen(viewModel = viewModel)
+                    0 -> DashboardScreen(
+                        listViewModel = listViewModel,
+                        storeViewModel = storeViewModel,
+                        scraperViewModel = scraperViewModel
+                    )
+                    1 -> GroceryListScreen(listViewModel = listViewModel)
+                    2 -> PriceHistoryScreen(listViewModel = listViewModel)
+                    3 -> {
+                        val items by listViewModel.items.collectAsState()
+                        val activeCount = items.count { !it.isCompleted }
+                        OptimizerScreen(
+                            optimizerViewModel = optimizerViewModel,
+                            activeCount = activeCount
+                        )
+                    }
+                    4 -> IntegrationScreen(settingsViewModel = settingsViewModel, listViewModel = listViewModel)
+                    5 -> SubscriptionScreen(settingsViewModel = settingsViewModel)
+                    6 -> SettingsScreen(
+                        settingsViewModel = settingsViewModel,
+                        storeViewModel = storeViewModel,
+                        optimizerViewModel = optimizerViewModel
+                    )
                 }
             }
         }

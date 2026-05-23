@@ -1,4 +1,5 @@
 import itertools
+import math
 from sqlalchemy.orm import Session
 from database import Store, Product
 
@@ -7,34 +8,56 @@ AVG_DRIVING_SPEED_KMH = 40.0
 # Base shopping time overhead per store visited (hours)
 SHOPPING_OVERHEAD_HR = 0.50 
 
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    # Radius of the earth in km
+    R = 6371.0
+    
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    
+    a = math.sin(delta_phi / 2.0)**2 + \
+        math.cos(phi1) * math.cos(phi2) * \
+        math.sin(delta_lambda / 2.0)**2
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    
+    return R * c
+
 def calculate_trip_costs(
     stores_visited: list,
     gas_price: float,
     mileage: float,
-    time_value: float
+    time_value: float,
+    user_lat: float = 43.3333,
+    user_lon: float = -79.8833
 ):
     """
     Computes total travel distance, fuel cost, and time cost for visiting a sequence of stores.
-    Simplification: Home is the starting point (0 km distance).
-    We estimate the route distance as:
-    Total Distance = Max distance of visited stores + sum of relative distances (approximated).
+    Calculates the exact shortest 2D path (TSP) starting at home, visiting all stores, and returning home.
     """
     if not stores_visited:
         return 0.0, 0.0, 0.0, 0.0
 
-    # Sort stores by distance to plan a simple linear route
-    sorted_stores = sorted(stores_visited, key=lambda s: s.distance_km)
+    best_distance = float('inf')
     
-    # Simple route distance calculation:
-    # 1. Drive to closest store (distance = closest_store.distance_km)
-    # 2. Drive between consecutive stores (distance = difference in distance_km + small padding)
-    # 3. Return home from furthest store (distance = furthest_store.distance_km)
-    total_distance_km = sorted_stores[0].distance_km
-    for i in range(len(sorted_stores) - 1):
-        # Approximating distance between store A and store B
-        dist_between = abs(sorted_stores[i+1].distance_km - sorted_stores[i].distance_km) + 1.0
-        total_distance_km += dist_between
-    total_distance_km += sorted_stores[-1].distance_km  # Return path
+    # Check all permutations to find the shortest TSP path
+    for perm in itertools.permutations(stores_visited):
+        current_distance = 0.0
+        current_lat, current_lon = user_lat, user_lon
+        
+        for store in perm:
+            store_lat = store.latitude if store.latitude is not None else user_lat
+            store_lon = store.longitude if store.longitude is not None else user_lon
+            current_distance += haversine_distance(current_lat, current_lon, store_lat, store_lon)
+            current_lat, current_lon = store_lat, store_lon
+            
+        current_distance += haversine_distance(current_lat, current_lon, user_lat, user_lon)
+        
+        if current_distance < best_distance:
+            best_distance = current_distance
+
+    total_distance_km = round(best_distance, 2)
 
     # Fuel Cost = (L / 100km) * total_km * price_per_L
     fuel_cost = (mileage / 100.0) * total_distance_km * gas_price
@@ -54,10 +77,12 @@ def optimize_trips(
     item_hashes: list,
     gas_price: float = 1.55,      # CAD per Liter
     mileage: float = 8.5,          # L/100km
-    time_value: float = 25.0       # CAD per hour
+    time_value: float = 25.0,      # CAD per hour
+    user_lat: float = 43.3333,
+    user_lon: float = -79.8833
 ):
     """
-    Calcules optimal store trips based on three options.
+    Calculates optimal store trips based on three options.
     Returns:
     - Single-Store Convenience
     - Two-Store Balance
@@ -90,7 +115,6 @@ def optimize_trips(
 
         for h in item_hashes:
             matched_products = products_by_hash.get(h, [])
-            # Find product matching this store
             store_product = next((p for p in matched_products if p.store_id == store.id), None)
             if store_product:
                 total_items_price += store_product.price
@@ -103,7 +127,7 @@ def optimize_trips(
             else:
                 unmatched_items += 1
 
-        dist, fuel, time_hr, time_val_cost = calculate_trip_costs([store], gas_price, mileage, time_value)
+        dist, fuel, time_hr, time_val_cost = calculate_trip_costs([store], gas_price, mileage, time_value, user_lat, user_lon)
         total_cost = total_items_price + fuel + time_val_cost
 
         single_store_options.append({
@@ -119,12 +143,10 @@ def optimize_trips(
             "unmatched_count": unmatched_items
         })
 
-    # Sort Single Store options by effective cost and select best
     best_single_store = sorted(single_store_options, key=lambda x: (x["unmatched_count"], x["total_effective_cost"]))[0]
 
     # 2. OPTION B: TWO-STORE BALANCE
     two_store_options = []
-    # Evaluate all unique pairs of stores
     for store_pair in itertools.combinations(all_stores, 2):
         store1, store2 = store_pair
         items_bought = []
@@ -137,7 +159,6 @@ def optimize_trips(
             p2 = next((p for p in matched_products if p.store_id == store2.id), None)
 
             if p1 and p2:
-                # Buy at cheaper store
                 cheaper = p1 if p1.price <= p2.price else p2
                 total_items_price += cheaper.price
                 items_bought.append({
@@ -165,7 +186,7 @@ def optimize_trips(
             else:
                 unmatched_items += 1
 
-        dist, fuel, time_hr, time_val_cost = calculate_trip_costs(list(store_pair), gas_price, mileage, time_value)
+        dist, fuel, time_hr, time_val_cost = calculate_trip_costs(list(store_pair), gas_price, mileage, time_value, user_lat, user_lon)
         total_cost = total_items_price + fuel + time_val_cost
 
         two_store_options.append({
@@ -183,7 +204,6 @@ def optimize_trips(
     best_two_store = sorted(two_store_options, key=lambda x: (x["unmatched_count"], x["total_effective_cost"]))[0] if two_store_options else best_single_store
 
     # 3. OPTION C: ABSOLUTE CHEAPEST (MULTI-STORE)
-    # Buy every item at its absolute cheapest store, visiting whatever stores necessary
     cheapest_items = []
     stores_to_visit_ids = set()
     total_cheapest_price = 0.0
@@ -205,7 +225,7 @@ def optimize_trips(
             unmatched_cheapest += 1
 
     visited_stores = [s for s in all_stores if s.id in stores_to_visit_ids]
-    dist, fuel, time_hr, time_val_cost = calculate_trip_costs(visited_stores, gas_price, mileage, time_value)
+    dist, fuel, time_hr, time_val_cost = calculate_trip_costs(visited_stores, gas_price, mileage, time_value, user_lat, user_lon)
     total_cost = total_cheapest_price + fuel + time_val_cost
 
     best_multi_store = {
@@ -220,8 +240,7 @@ def optimize_trips(
         "unmatched_count": unmatched_cheapest
     }
 
-    # Decide on the Recommended Option
-    # The recommendation is the one with the lowest TOTAL EFFECTIVE COST (price + gas + time)
+    # Decide on Recommended Option
     recommendation = "single_store"
     min_effective_cost = best_single_store["total_effective_cost"]
     

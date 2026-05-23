@@ -20,17 +20,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ListViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.StoreViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ScraperViewModel
 
 @Composable
 fun DashboardScreen(
-    viewModel: GroceryViewModel,
+    listViewModel: ListViewModel,
+    storeViewModel: StoreViewModel,
+    scraperViewModel: ScraperViewModel,
     modifier: Modifier = Modifier
 ) {
-    val itemsState by viewModel.items.collectAsState()
-    val storesState by viewModel.stores.collectAsState()
-    val scraperStatusState by viewModel.scraperStatus.collectAsState()
-    val selectedStoresState by viewModel.selectedStoreNames.collectAsState()
+    val itemsState by listViewModel.items.collectAsState()
+    val storesState by storeViewModel.stores.collectAsState()
+    val scraperStatusState by scraperViewModel.scraperStatus.collectAsState()
+    val selectedStoresState by storeViewModel.selectedStoreNames.collectAsState()
 
     val activeCount = itemsState.count { !it.isCompleted }
     
@@ -150,7 +154,7 @@ fun DashboardScreen(
         // Trigger Scraper Button
         val isRunning = scraperStatusState?.status == "running"
         Button(
-            onClick = { viewModel.triggerScraper() },
+            onClick = { scraperViewModel.triggerScraper(selectedStoresState) },
             enabled = !isRunning,
             modifier = Modifier
                 .fillMaxWidth()

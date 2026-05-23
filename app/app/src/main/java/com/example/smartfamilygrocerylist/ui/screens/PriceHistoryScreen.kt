@@ -19,16 +19,16 @@ import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.data.model.StoreProductHistory
 import com.example.smartfamilygrocerylist.ui.components.PriceLineChart
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PriceHistoryScreen(
-    viewModel: GroceryViewModel,
+    listViewModel: ListViewModel,
     modifier: Modifier = Modifier
 ) {
-    val itemsState by viewModel.items.collectAsState()
-    val priceTrendsState by viewModel.priceTrends.collectAsState()
+    val itemsState by listViewModel.items.collectAsState()
+    val priceTrendsState by listViewModel.priceTrends.collectAsState()
 
     var selectedItemHash by remember { mutableStateOf("") }
     

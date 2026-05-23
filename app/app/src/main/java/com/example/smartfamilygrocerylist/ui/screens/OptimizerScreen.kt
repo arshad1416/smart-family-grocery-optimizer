@@ -15,18 +15,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.ui.components.TripOptimizerCard
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.OptimizerViewModel
 
 @Composable
 fun OptimizerScreen(
-    viewModel: GroceryViewModel,
+    optimizerViewModel: OptimizerViewModel,
+    activeCount: Int,
     modifier: Modifier = Modifier
 ) {
-    val itemsState by viewModel.items.collectAsState()
-    val optimizationState by viewModel.optimization.collectAsState()
-    val isLoadingState by viewModel.isLoading.collectAsState()
-
-    val activeCount = itemsState.count { !it.isCompleted }
+    val optimizationState by optimizerViewModel.optimization.collectAsState()
+    val isLoadingState by optimizerViewModel.isLoading.collectAsState()
 
     Column(
         modifier = modifier
@@ -60,7 +58,7 @@ fun OptimizerScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 // Button to Calculate Route
                 Button(
-                    onClick = { viewModel.calculateRoute() },
+                    onClick = { optimizerViewModel.calculateRoute() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),

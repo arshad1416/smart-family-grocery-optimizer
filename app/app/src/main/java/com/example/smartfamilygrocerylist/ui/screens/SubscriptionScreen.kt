@@ -22,15 +22,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.data.api.RetrofitClient
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubscriptionScreen(
-    viewModel: GroceryViewModel,
+    settingsViewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
-    val syncModeState by viewModel.syncMode.collectAsState()
+    val syncModeState by settingsViewModel.syncMode.collectAsState()
     
     // Credit card simulator
     var showCheckoutDialog by remember { mutableStateOf(false) }
@@ -60,9 +60,8 @@ fun SubscriptionScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable {
-                    viewModel.syncMode.value = "local"
-                    RetrofitClient.setBaseUrl("http://10.0.2.2:8000/") // Local emulator
-                    viewModel.loadData()
+                    settingsViewModel.updateSyncMode("local")
+                    settingsViewModel.updateServerUrl("http://10.0.2.2:8000/")
                 },
             shape = RoundedCornerShape(14.dp),
             border = BorderStroke(1.5.dp, if (localSelected) Color(0xFF6366F1) else Color(0x11FFFFFF)),
@@ -123,8 +122,8 @@ fun SubscriptionScreen(
                     if (!cardSuccess) {
                         showCheckoutDialog = true
                     } else {
-                        viewModel.syncMode.value = "cloud"
-                        RetrofitClient.setBaseUrl("https://api.smartgrocery-cloud.com/") // Cloud mockup url
+                        settingsViewModel.updateSyncMode("cloud")
+                        settingsViewModel.updateServerUrl("https://api.smartgrocery-cloud.com/")
                     }
                 },
             shape = RoundedCornerShape(14.dp),
@@ -259,8 +258,8 @@ fun SubscriptionScreen(
                         onClick = {
                             if (cardNumber.length >= 12) {
                                 cardSuccess = true
-                                viewModel.syncMode.value = "cloud"
-                                RetrofitClient.setBaseUrl("https://api.smartgrocery-cloud.com/")
+                                settingsViewModel.updateSyncMode("cloud")
+                                settingsViewModel.updateServerUrl("https://api.smartgrocery-cloud.com/")
                                 showCheckoutDialog = false
                             }
                         },

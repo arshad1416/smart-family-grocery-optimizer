@@ -255,3 +255,28 @@ def test_google_places_api_search_mocking():
         assert data[0]["name"] == "Google Places Costco Test"
         assert data[0]["location"] == "100 Google Way, Toronto, ON"
         assert data[0]["distance_km"] == 0.0
+
+def test_tofu_authentication():
+    # 1. Register a token
+    token_hash = "mock_token_hash_sha256"
+    response = client.post(
+        "/api/collaboration/register-token",
+        json={
+            "token_hash": token_hash,
+            "passphrase": "SecretPassphrase"
+        }
+    )
+    assert response.status_code == 200
+
+    # 2. Now, request without token should fail with 401
+    response = client.get("/api/stores")
+    assert response.status_code == 401
+
+    # 3. Request with invalid token should fail with 401
+    response = client.get("/api/stores", headers={"Authorization": "Bearer invalid_token"})
+    assert response.status_code == 401
+
+    # 4. Request with correct token should succeed
+    response = client.get("/api/stores", headers={"Authorization": f"Bearer {token_hash}"})
+    assert response.status_code == 200
+

@@ -68,4 +68,7 @@ interface ApiService {
     suspend fun addCustomStore(
         @Body body: Map<String, Any>
     ): Map<String, Any>
+
+    @POST("api/collaboration/register-token")
+    suspend fun registerToken(@Body body: Map<String, String>): Map<String, Any>
 }

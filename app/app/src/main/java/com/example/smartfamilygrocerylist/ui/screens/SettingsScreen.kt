@@ -23,7 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
 import com.example.smartfamilygrocerylist.platform.ShareSheet
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.SettingsViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.StoreViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.OptimizerViewModel
 import com.example.smartfamilygrocerylist.utils.LocationHelper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,7 +33,9 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
-    viewModel: GroceryViewModel,
+    settingsViewModel: SettingsViewModel,
+    storeViewModel: StoreViewModel,
+    optimizerViewModel: OptimizerViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -45,23 +49,22 @@ fun SettingsScreen(
                 permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
             scope.launch {
-                LocationHelper.detectLocation(context, viewModel)
+                LocationHelper.detectLocation(context, settingsViewModel)
             }
         }
     }
 
     // Configuration states
-    val gasPriceState by viewModel.gasPrice.collectAsState()
-    val mileageState by viewModel.mileage.collectAsState()
-    val timeValueState by viewModel.timeValue.collectAsState()
-    val encryptionKeyState by viewModel.encryptionKey.collectAsState()
-    val inviteCodeState by viewModel.inviteCode.collectAsState()
+    val gasPriceState by optimizerViewModel.gasPrice.collectAsState()
+    val mileageState by optimizerViewModel.mileage.collectAsState()
+    val timeValueState by optimizerViewModel.timeValue.collectAsState()
+    val encryptionKeyState by settingsViewModel.encryptionKey.collectAsState()
 
     // Store checklist search states
-    val registeredStores by viewModel.stores.collectAsState()
-    val selectedStoresState by viewModel.selectedStoreNames.collectAsState()
-    val searchResults by viewModel.storeSearchResults.collectAsState()
-    val isSearching by viewModel.isSearchingStores.collectAsState()
+    val registeredStores by storeViewModel.stores.collectAsState()
+    val selectedStoresState by storeViewModel.selectedStoreNames.collectAsState()
+    val searchResults by storeViewModel.storeSearchResults.collectAsState()
+    val isSearching by storeViewModel.isSearchingStores.collectAsState()
     var storeSearchQuery by remember { mutableStateOf("") }
 
     // Dialog trigger
@@ -98,7 +101,7 @@ fun SettingsScreen(
             }
             Slider(
                 value = gasPriceState.toFloat(),
-                onValueChange = { viewModel.gasPrice.value = it.toDouble() },
+                onValueChange = { optimizerViewModel.updateGasPrice(it.toDouble()) },
                 valueRange = 1.0f..2.5f,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF6366F1),
@@ -121,7 +124,7 @@ fun SettingsScreen(
             }
             Slider(
                 value = mileageState.toFloat(),
-                onValueChange = { viewModel.mileage.value = it.toDouble() },
+                onValueChange = { optimizerViewModel.updateMileage(it.toDouble()) },
                 valueRange = 5.0f..15.0f,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF6366F1),
@@ -144,7 +147,7 @@ fun SettingsScreen(
             }
             Slider(
                 value = timeValueState.toFloat(),
-                onValueChange = { viewModel.timeValue.value = it.toDouble() },
+                onValueChange = { optimizerViewModel.updateTimeValue(it.toDouble()) },
                 valueRange = 10.0f..60.0f,
                 colors = SliderDefaults.colors(
                     thumbColor = Color(0xFF6366F1),
@@ -170,7 +173,8 @@ fun SettingsScreen(
                 modifier = Modifier.padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                var serverUrlInput by remember { mutableStateOf(viewModel.serverUrl.value) }
+                val serverUrlState by settingsViewModel.serverUrl.collectAsState()
+                var serverUrlInput by remember(serverUrlState) { mutableStateOf(serverUrlState) }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -197,7 +201,7 @@ fun SettingsScreen(
                     )
                     Button(
                         onClick = {
-                            viewModel.updateServerUrl(serverUrlInput)
+                            settingsViewModel.updateServerUrl(serverUrlInput)
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
                         shape = RoundedCornerShape(8.dp),
@@ -267,8 +271,8 @@ fun SettingsScreen(
                 
                 Text("Provide your city and province to locate grocery stores near you.", color = Color.Gray, fontSize = 10.sp)
 
-                val userCityState by viewModel.userCity.collectAsState()
-                val userProvinceState by viewModel.userProvince.collectAsState()
+                val userCityState by settingsViewModel.userCity.collectAsState()
+                val userProvinceState by settingsViewModel.userProvince.collectAsState()
 
                 var cityInput by remember(userCityState) { mutableStateOf(userCityState) }
                 var provinceInput by remember(userProvinceState) { mutableStateOf(userProvinceState) }
@@ -282,7 +286,7 @@ fun SettingsScreen(
                         onValueChange = {
                             cityInput = it
                             scope.launch {
-                                LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
+                                LocationHelper.geocodeAddress(context, cityInput, provinceInput, settingsViewModel)
                             }
                         },
                         label = { Text("City") },
@@ -304,7 +308,7 @@ fun SettingsScreen(
                         onValueChange = {
                             provinceInput = it
                             scope.launch {
-                                LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
+                                LocationHelper.geocodeAddress(context, cityInput, provinceInput, settingsViewModel)
                             }
                         },
                         label = { Text("Province") },
@@ -323,8 +327,8 @@ fun SettingsScreen(
                     )
                 }
                 
-                val userLat by viewModel.userLatitude.collectAsState()
-                val userLon by viewModel.userLongitude.collectAsState()
+                val userLat by settingsViewModel.userLatitude.collectAsState()
+                val userLon by settingsViewModel.userLongitude.collectAsState()
                 Text(
                     text = "Geocoded: ${"%.4f".format(userLat)}, ${"%.4f".format(userLon)}",
                     color = Color.Gray,
@@ -343,7 +347,7 @@ fun SettingsScreen(
             value = storeSearchQuery,
             onValueChange = {
                 storeSearchQuery = it
-                viewModel.searchNearbyStores(it)
+                storeViewModel.searchNearbyStores(it)
             },
             placeholder = { Text("Search nearby (e.g. Costco, Whole Foods)") },
             label = { Text("Add Store from Map Search") },
@@ -387,7 +391,7 @@ fun SettingsScreen(
                         }
                         Button(
                             onClick = {
-                                viewModel.addSearchedStore(searchedStore) { success ->
+                                storeViewModel.addSearchedStore(searchedStore) { success ->
                                     if (success) {
                                         storeSearchQuery = ""
                                     }
@@ -418,7 +422,7 @@ fun SettingsScreen(
                         val currentList = selectedStoresState.toMutableList()
                         if (isChecked) currentList.remove(store.name)
                         else currentList.add(store.name)
-                        viewModel.updateSelectedStores(currentList)
+                        storeViewModel.updateSelectedStores(currentList)
                     }
                     .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -440,7 +444,7 @@ fun SettingsScreen(
                         } else {
                             currentList.remove(store.name)
                         }
-                        viewModel.updateSelectedStores(currentList)
+                        storeViewModel.updateSelectedStores(currentList)
                     },
                     colors = CheckboxDefaults.colors(
                         checkedColor = Color(0xFF6366F1),
@@ -529,7 +533,7 @@ fun SettingsScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(Color.Black)
-                            )
+                              )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(

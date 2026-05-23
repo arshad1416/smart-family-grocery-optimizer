@@ -24,16 +24,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.SettingsViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.StoreViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ListViewModel
 import com.example.smartfamilygrocerylist.utils.LocationHelper
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import kotlinx.coroutines.launch
 
+private fun generateSecurePassphrase(): String {
+    val allowedChars = ('A'..'Z') + ('a'..'z') + ('0'..'9')
+    return (1..16)
+        .map { allowedChars.random() }
+        .joinToString("")
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
-    viewModel: GroceryViewModel,
+    settingsViewModel: SettingsViewModel,
+    storeViewModel: StoreViewModel,
+    listViewModel: ListViewModel,
     onComplete: () -> Unit
 ) {
     var step by remember { mutableStateOf(1) }
@@ -48,7 +59,7 @@ fun OnboardingScreen(
                 permissions[android.Manifest.permission.ACCESS_COARSE_LOCATION] == true
         if (granted) {
             scope.launch {
-                LocationHelper.detectLocation(context, viewModel)
+                LocationHelper.detectLocation(context, settingsViewModel)
             }
         }
     }
@@ -63,19 +74,19 @@ fun OnboardingScreen(
     }
 
     // Store Selection States linked to ViewModel
-    val registeredStores by viewModel.stores.collectAsState()
-    val selectedStoresState by viewModel.selectedStoreNames.collectAsState()
-    val userLatitudeState by viewModel.userLatitude.collectAsState()
-    val userLongitudeState by viewModel.userLongitude.collectAsState()
+    val registeredStores by storeViewModel.stores.collectAsState()
+    val selectedStoresState by storeViewModel.selectedStoreNames.collectAsState()
+    val userLatitudeState by settingsViewModel.userLatitude.collectAsState()
+    val userLongitudeState by settingsViewModel.userLongitude.collectAsState()
     
     // Store Search States
-    val searchResults by viewModel.storeSearchResults.collectAsState()
-    val isSearching by viewModel.isSearchingStores.collectAsState()
+    val searchResults by storeViewModel.storeSearchResults.collectAsState()
+    val isSearching by storeViewModel.isSearchingStores.collectAsState()
     var storeSearchQuery by remember { mutableStateOf("") }
 
     // Key management states
     var keyOption by remember { mutableStateOf(1) } // 1: Passphrase, 2: QR
-    var passphrase by remember { mutableStateOf("FamilyKey2026") }
+    var passphrase by remember { mutableStateOf(generateSecurePassphrase()) }
     var isScanningSimulated by remember { mutableStateOf(false) }
 
     // Store Request Dialog State
@@ -183,7 +194,7 @@ fun OnboardingScreen(
                             Text("Backend Connection Setup", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                             Text("Provide the IP address of your Mac or Tailscale server node hosting uvicorn.", color = Color.Gray, fontSize = 10.sp)
                             
-                            var serverUrlInput by remember { mutableStateOf(viewModel.serverUrl.value) }
+                            var serverUrlInput by remember { mutableStateOf(settingsViewModel.serverUrl.value) }
                             
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -210,7 +221,7 @@ fun OnboardingScreen(
                                 )
                                 Button(
                                     onClick = {
-                                        viewModel.updateServerUrl(serverUrlInput)
+                                        settingsViewModel.updateServerUrl(serverUrlInput)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6366F1)),
                                     shape = RoundedCornerShape(8.dp),
@@ -244,8 +255,8 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Home Search Location Card
-                    val userCityState by viewModel.userCity.collectAsState()
-                    val userProvinceState by viewModel.userProvince.collectAsState()
+                    val userCityState by settingsViewModel.userCity.collectAsState()
+                    val userProvinceState by settingsViewModel.userProvince.collectAsState()
 
                     Card(
                         modifier = Modifier
@@ -295,7 +306,7 @@ fun OnboardingScreen(
                                     onValueChange = {
                                         cityInput = it
                                         scope.launch {
-                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
+                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, settingsViewModel)
                                         }
                                     },
                                     label = { Text("City") },
@@ -317,7 +328,7 @@ fun OnboardingScreen(
                                     onValueChange = {
                                         provinceInput = it
                                         scope.launch {
-                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, viewModel)
+                                            LocationHelper.geocodeAddress(context, cityInput, provinceInput, settingsViewModel)
                                         }
                                     },
                                     label = { Text("Province") },
@@ -336,8 +347,8 @@ fun OnboardingScreen(
                                 )
                             }
                             
-                            val userLat by viewModel.userLatitude.collectAsState()
-                            val userLon by viewModel.userLongitude.collectAsState()
+                            val userLat by settingsViewModel.userLatitude.collectAsState()
+                            val userLon by settingsViewModel.userLongitude.collectAsState()
                             Text(
                                 text = "Geocoded: ${"%.4f".format(userLat)}, ${"%.4f".format(userLon)}",
                                 color = Color.Gray,
@@ -353,7 +364,7 @@ fun OnboardingScreen(
                         value = storeSearchQuery,
                         onValueChange = {
                             storeSearchQuery = it
-                            viewModel.searchNearbyStores(it)
+                            storeViewModel.searchNearbyStores(it)
                         },
                         placeholder = { Text("Search nearby stores (e.g. Costco, Whole Foods)") },
                         label = { Text("Find Grocery Store Nearby") },
@@ -400,7 +411,7 @@ fun OnboardingScreen(
                                     }
                                     Button(
                                         onClick = {
-                                            viewModel.addSearchedStore(searchedStore) { success ->
+                                            storeViewModel.addSearchedStore(searchedStore) { success ->
                                                 if (success) {
                                                     storeSearchQuery = ""
                                                 }
@@ -433,7 +444,7 @@ fun OnboardingScreen(
                                     val currentList = selectedStoresState.toMutableList()
                                     if (isChecked) currentList.remove(store.name)
                                     else currentList.add(store.name)
-                                    viewModel.updateSelectedStores(currentList)
+                                    storeViewModel.updateSelectedStores(currentList)
                                 }
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -455,7 +466,7 @@ fun OnboardingScreen(
                                     } else {
                                         currentList.remove(store.name)
                                     }
-                                    viewModel.updateSelectedStores(currentList)
+                                    storeViewModel.updateSelectedStores(currentList)
                                 },
                                 colors = CheckboxDefaults.colors(
                                     checkedColor = Color(0xFF6366F1),
@@ -620,8 +631,8 @@ fun OnboardingScreen(
                     if (step == 1) {
                         step = 2
                     } else {
-                        viewModel.encryptionKey.value = passphrase
-                        viewModel.loadData()
+                        settingsViewModel.updateEncryptionKey(passphrase, registerOnServer = true)
+                        listViewModel.loadData()
                         onComplete()
                     }
                 },
@@ -687,7 +698,7 @@ fun OnboardingScreen(
                     Button(
                         onClick = {
                             if (requestStoreName.isNotBlank()) {
-                                viewModel.requestStore(requestStoreName, requestStoreAddress)
+                                storeViewModel.requestStore(requestStoreName, requestStoreAddress)
                                 requestStoreName = ""
                                 requestStoreAddress = ""
                                 showRequestDialog = false

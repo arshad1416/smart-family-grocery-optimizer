@@ -9,7 +9,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 object Cryptography {
-    private const val ITERATIONS = 1000
+    private const val ITERATIONS = 600_000
     private const val KEY_LENGTH = 256
     private const val SALT_LENGTH = 16
     private const val IV_LENGTH = 12 // GCM standard IV size

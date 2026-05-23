@@ -21,15 +21,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.smartfamilygrocerylist.R
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.SettingsViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.ListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IntegrationScreen(
-    viewModel: GroceryViewModel,
+    settingsViewModel: SettingsViewModel,
+    listViewModel: ListViewModel,
     modifier: Modifier = Modifier
 ) {
-    val logsState by viewModel.smartHomeLogs.collectAsState()
+    val logsState by settingsViewModel.smartHomeLogs.collectAsState()
     var voiceInputText by remember { mutableStateOf("") }
     var selectedDevice by remember { mutableStateOf("siri") } // siri, google, alexa
 
@@ -126,7 +128,9 @@ fun IntegrationScreen(
             Button(
                 onClick = {
                     if (voiceInputText.isNotBlank()) {
-                        viewModel.simulateVoiceSpeech(voiceInputText, selectedDevice)
+                        settingsViewModel.simulateVoiceSpeech(voiceInputText, selectedDevice, onSpeechProcessed = {
+                            listViewModel.loadData()
+                        })
                         voiceInputText = ""
                     }
                 },

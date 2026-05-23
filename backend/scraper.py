@@ -2,6 +2,7 @@ import asyncio
 import logging
 import random
 import hashlib
+import re
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from database import Store, Product, PriceHistory
@@ -10,13 +11,13 @@ from database import Store, Product, PriceHistory
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("GroceryScraper")
 
-# List of major Ontario stores and coordinates/mock distances
+# List of major Ontario stores and coordinates (geographically biased around Waterdown, ON)
 ONTARIO_STORES = [
-    {"name": "Walmart Supercentre", "distance_km": 2.4, "location": "100 Copper Creek Dr, Markham"},
-    {"name": "No Frills", "distance_km": 1.8, "location": "2900 Steeles Ave E, Markham"},
-    {"name": "Loblaws", "distance_km": 3.5, "location": "200 Bulwer St, Toronto"},
-    {"name": "Metro", "distance_km": 4.2, "location": "2900 Warden Ave, Scarborough"},
-    {"name": "Sobeys", "distance_km": 5.0, "location": "5851 Yonge St, North York"}
+    {"name": "Walmart Supercentre", "distance_km": 0.78, "location": "90 Dundas St E, Waterdown", "latitude": 43.3402, "longitude": -79.8817},
+    {"name": "No Frills", "distance_km": 1.55, "location": "398 Dundas St E, Waterdown", "latitude": 43.3435, "longitude": -79.8700},
+    {"name": "Fortinos", "distance_km": 0.71, "location": "115 Hamilton St N, Waterdown", "latitude": 43.3323, "longitude": -79.8920},
+    {"name": "Metro", "distance_km": 9.80, "location": "2010 Appleby Line, Burlington", "latitude": 43.3986, "longitude": -79.8052},
+    {"name": "Sobeys", "distance_km": 0.60, "location": "150 Hamilton St N, Waterdown", "latitude": 43.3340, "longitude": -79.8906}
 ]
 
 # Standardized items database to match and generate prices
@@ -106,7 +107,9 @@ async def scrape_grocery_prices(db: Session, selected_store_names: list = None, 
             store = Store(
                 name=store_data["name"],
                 location=store_data["location"],
-                distance_km=store_data["distance_km"]
+                distance_km=store_data["distance_km"],
+                latitude=store_data["latitude"],
+                longitude=store_data["longitude"]
             )
             db.add(store)
             db.commit()
@@ -133,14 +136,22 @@ async def scrape_grocery_prices(db: Session, selected_store_names: list = None, 
             
         # Running the crawl4ai async scraper function in background
         # We handle failures gracefully and generate realistic data
-        await run_crawl4ai_scrape(store_url)
+        scraped_markdown = await run_crawl4ai_scrape(store_url)
+        extracted = parse_prices_from_markdown(scraped_markdown)
         
+        if log_callback and extracted:
+            await log_callback(f"[{store.name}] Parsed {len(extracted)} real product prices from crawler.")
+            await asyncio.sleep(0.3)
+        elif log_callback:
+            await log_callback(f"[{store.name}] DOM empty or blocked. Simulating localized fallback pricing.")
+            await asyncio.sleep(0.3)
+
         if log_callback:
             await log_callback(f"[{store.name}] Parsing DOM & extracting product catalogs...")
             await asyncio.sleep(0.4)
 
         # Generate / Update items for this store using helper function
-        added, updated = seed_store_prices(db, store)
+        added, updated = seed_store_prices(db, store, extracted)
         total_added += added
         total_updated += updated
 
@@ -154,7 +165,34 @@ async def scrape_grocery_prices(db: Session, selected_store_names: list = None, 
 
     return total_added, total_updated
 
-def seed_store_prices(db: Session, store: Store):
+def parse_prices_from_markdown(markdown_text: str) -> list:
+    """
+    Parses catalog items and prices from scraped markdown content.
+    Looks for pattern like '**Item Name** - $Price' or similar,
+    or does a text search for the item name near a currency pattern.
+    """
+    if not markdown_text:
+        return []
+    
+    extracted = []
+    # Check for known items in the catalog and scan markdown for matches
+    for item in GROCERY_ITEMS_CATALOG:
+        # Regex search for item name followed by a price within 60 characters
+        pattern = re.compile(
+            rf"{re.escape(item['name'])}[^\n]*?\$(\d+\.\d{{2}})", 
+            re.IGNORECASE
+        )
+        match = pattern.search(markdown_text)
+        if match:
+            try:
+                price = float(match.group(1))
+                extracted.append({"name": item["name"], "price": price})
+                logger.info(f"Scraper extracted real price for '{item['name']}': ${price}")
+            except Exception:
+                pass
+    return extracted
+
+def seed_store_prices(db: Session, store: Store, extracted_prices: list = None):
     """
     Seeds catalog products and price histories for a specific store.
     Uses realistic markup fluctuations depending on the store name.
@@ -162,25 +200,32 @@ def seed_store_prices(db: Session, store: Store):
     total_added = 0
     total_updated = 0
     
+    real_prices = {}
+    if extracted_prices:
+        real_prices = {p["name"]: p["price"] for p in extracted_prices}
+        
     for item in GROCERY_ITEMS_CATALOG:
         # Add small random fluctuation to store price
-        markup = 1.0
-        if "Walmart" in store.name:
-            markup = 0.90 + random.uniform(-0.05, 0.05)
-        elif "No Frills" in store.name:
-            markup = 0.88 + random.uniform(-0.04, 0.04)
-        elif "Metro" in store.name:
-            markup = 1.08 + random.uniform(-0.05, 0.05)
-        elif "Sobeys" in store.name:
-            markup = 1.12 + random.uniform(-0.06, 0.06)
-        elif "Costco" in store.name:
-            markup = 0.85 + random.uniform(-0.03, 0.03) # wholesale prices
-        elif "Whole Foods" in store.name:
-            markup = 1.25 + random.uniform(-0.07, 0.07) # premium organic
+        if item["name"] in real_prices:
+            final_price = real_prices[item["name"]]
         else:
-            markup = 1.0 + random.uniform(-0.05, 0.05)
+            markup = 1.0
+            if "Walmart" in store.name:
+                markup = 0.90 + random.uniform(-0.05, 0.05)
+            elif "No Frills" in store.name:
+                markup = 0.88 + random.uniform(-0.04, 0.04)
+            elif "Metro" in store.name:
+                markup = 1.08 + random.uniform(-0.05, 0.05)
+            elif "Sobeys" in store.name:
+                markup = 1.12 + random.uniform(-0.06, 0.06)
+            elif "Costco" in store.name:
+                markup = 0.85 + random.uniform(-0.03, 0.03) # wholesale prices
+            elif "Whole Foods" in store.name:
+                markup = 1.25 + random.uniform(-0.07, 0.07) # premium organic
+            else:
+                markup = 1.0 + random.uniform(-0.05, 0.05)
 
-        final_price = round(item["base_price"] * markup, 2)
+            final_price = round(item["base_price"] * markup, 2)
         item_hash = get_product_hash(item["name"])
 
         # Check if product already exists

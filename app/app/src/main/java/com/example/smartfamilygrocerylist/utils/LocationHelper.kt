@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Geocoder
 import android.location.LocationManager
-import com.example.smartfamilygrocerylist.ui.viewmodel.GroceryViewModel
+import com.example.smartfamilygrocerylist.ui.viewmodel.SettingsViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -12,7 +12,7 @@ import java.util.Locale
 object LocationHelper {
 
     @SuppressLint("MissingPermission")
-    suspend fun detectLocation(context: Context, viewModel: GroceryViewModel): Boolean {
+    suspend fun detectLocation(context: Context, viewModel: SettingsViewModel): Boolean {
         return withContext(Dispatchers.IO) {
             try {
                 val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -50,7 +50,7 @@ object LocationHelper {
         }
     }
 
-    suspend fun geocodeAddress(context: Context, city: String, province: String, viewModel: GroceryViewModel): Boolean {
+    suspend fun geocodeAddress(context: Context, city: String, province: String, viewModel: SettingsViewModel): Boolean {
         return withContext(Dispatchers.IO) {
             if (city.isBlank()) return@withContext false
             try {
@@ -74,3 +74,4 @@ object LocationHelper {
         }
     }
 }
+
