@@ -1,0 +1,31 @@
+{
+  "stores": [
+    {"name": "Walmart Supercentre", "distance_km": 2.4, "location": "100 Copper Creek Dr, Markham"},
+    {"name": "No Frills", "distance_km": 1.8, "location": "2900 Steeles Ave E, Markham"},
+    {"name": "Loblaws", "distance_km": 3.5, "location": "200 Bulwer St, Toronto"},
+    {"name": "Metro", "distance_km": 4.2, "location": "2900 Warden Ave, Scarborough"},
+    {"name": "Sobeys", "distance_km": 5.0, "location": "5851 Yonge St, North York"}
+  ],
+  "products": [
+    {"name": "Organic Bananas", "brand": "Dole", "category": "Produce", "weight": "1 bunch", "base_price": 1.99},
+    {"name": "Honeycrisp Apples", "brand": "Ontario Farm", "category": "Produce", "weight": "3lb bag", "base_price": 5.99},
+    {"name": "Baby Spinach", "brand": "Earthbound Farm", "category": "Produce", "weight": "142g", "base_price": 3.99},
+    {"name": "Roma Tomatoes", "brand": "Local Greenhouse", "category": "Produce", "weight": "1kg", "base_price": 4.49},
+    {"name": "Avocados", "brand": "Mexico Gold", "category": "Produce", "weight": "5-pack", "base_price": 4.99},
+    {"name": "Organic Milk 3.25%", "brand": "Organic Meadow", "category": "Dairy & Eggs", "weight": "4L", "base_price": 8.49},
+    {"name": "Large Eggs Brown", "brand": "Burnbrae Farms", "category": "Dairy & Eggs", "weight": "12-pack", "base_price": 4.99},
+    {"name": "Salted Butter", "brand": "Lactantia", "category": "Dairy & Eggs", "weight": "454g", "base_price": 6.99},
+    {"name": "Greek Yogurt Plain", "brand": "Liberte", "category": "Dairy & Eggs", "weight": "650g", "base_price": 5.49},
+    {"name": "Cheddar Cheese Block", "brand": "Black Diamond", "category": "Dairy & Eggs", "weight": "400g", "base_price": 7.49},
+    {"name": "Organic Honey", "brand": "Billy Bee", "category": "Pantry", "weight": "500g", "base_price": 6.49},
+    {"name": "Peanut Butter", "brand": "Kraft", "category": "Pantry", "weight": "1kg", "base_price": 5.99},
+    {"name": "Old Fashioned Rolled Oats", "brand": "Quaker", "category": "Pantry", "weight": "1kg", "base_price": 3.99},
+    {"name": "Extra Virgin Olive Oil", "brand": "Gallo", "category": "Pantry", "weight": "1L", "base_price": 14.99},
+    {"name": "Whole Wheat Bread", "brand": "Dempster's", "category": "Pantry", "weight": "675g", "base_price": 3.29},
+    {"name": "Chicken Breasts Boneless", "brand": "Maple Leaf", "category": "Meat & Seafood", "weight": "1kg", "base_price": 15.99},
+    {"name": "Lean Ground Beef", "brand": "Ontario Beef", "category": "Meat & Seafood", "weight": "500g", "base_price": 7.99},
+    {"name": "Atlantic Salmon Fillet", "brand": "Fresh Catch", "category": "Meat & Seafood", "weight": "400g", "base_price": 12.99},
+    {"name": "Butter Croissants", "brand": "In-Store Bakery", "category": "Bakery", "weight": "6-pack", "base_price": 4.49},
+    {"name": "Chocolate Chip Cookies", "brand": "In-Store Bakery", "category": "Bakery", "weight": "12-pack", "base_price": 3.99}
+  ]
+}

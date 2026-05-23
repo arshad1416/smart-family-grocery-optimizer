@@ -1,0 +1,81 @@
+<resources>
+    <string name="app_name">Smart Family Grocery List</string>
+    
+    <!-- Onboarding / Setup -->
+    <string name="welcome_title">Smart Family Grocery List</string>
+    <string name="welcome_subtitle">Save money, gas, and time on grocery shopping.</string>
+    <string name="choose_stores_title">Select Grocery Stores Near You</string>
+    <string name="choose_stores_subtitle">The scraper will only search for prices at selected stores.</string>
+    <string name="key_setup_title">Set Up Family Encryption Key</string>
+    <string name="key_setup_subtitle">This key encrypts your grocery list so that no one else can read it.</string>
+    <string name="passphrase_option">Enter Family Passphrase</string>
+    <string name="qr_option">Scan Family QR Code</string>
+    <string name="submit_key">Save Key and Continue</string>
+    <string name="request_store_button">Request a New Store</string>
+    <string name="request_store_title">Request Store Addition</string>
+    <string name="request_store_name_label">Store Name</string>
+    <string name="request_store_address_label">Store Address (Optional)</string>
+    <string name="send_request">Send Request</string>
+    
+    <!-- Navigation Tabs -->
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="tab_list">List</string>
+    <string name="tab_history">History</string>
+    <string name="tab_optimizer">Optimizer</string>
+    <string name="tab_integrations">Smart Home</string>
+    <string name="tab_settings">Settings</string>
+    
+    <!-- Dashboard -->
+    <string name="stats_active_items">Active Items</string>
+    <string name="stats_potential_savings">Monthly Savings</string>
+    <string name="stats_tracked_prices">Tracked Prices</string>
+    <string name="stats_scraper_status">Scraper Engine</string>
+    <string name="status_idle">Idle</string>
+    <string name="status_running">Running</string>
+    <string name="run_scraper_btn">Start Scraper Now</string>
+    <string name="scraper_logs_title">Live Scraper Output Logs</string>
+    
+    <!-- List -->
+    <string name="add_item_hint">Type item name (e.g., Milk, Eggs)</string>
+    <string name="add_item_button">Add</string>
+    <string name="cheapest_at_badge">Cheapest: %s</string>
+    
+    <!-- Optimizer -->
+    <string name="optimizer_title">Grocery Trip Optimizer</string>
+    <string name="optimize_btn">Calculate Best Route</string>
+    <string name="recommended_badge">Best Choice</string>
+    <string name="option_single_store">Single Store Convenience</string>
+    <string name="option_two_stores">Two Stores Balanced</string>
+    <string name="option_multi_stores">Absolute Cheapest (Multi-Store)</string>
+    <string name="summary_items_price">Items price: %s</string>
+    <string name="summary_travel_cost">Travel cost (Gas): %s</string>
+    <string name="summary_time_value">Time overhead cost: %s</string>
+    <string name="summary_total_effective">Total effective cost: %s</string>
+    
+    <!-- Smart Home Simulator -->
+    <string name="voice_sandbox_title">Smart Speaker Voice Simulator</string>
+    <string name="voice_command_hint">Type voice command (e.g. \"add milk\")</string>
+    <string name="trigger_siri">Trigger Siri</string>
+    <string name="trigger_google">Trigger Google Home</string>
+    <string name="trigger_alexa">Trigger Alexa</string>
+    <string name="device_payload_title">Incoming API Payload Logs</string>
+    
+    <!-- Subscriptions -->
+    <string name="sub_title">Hosting &amp; Synchronization Toggles</string>
+    <string name="local_sync_title">Self-Hosted Sync (Free)</string>
+    <string name="local_sync_desc">Your data stays inside your home network using Tailscale.</string>
+    <string name="cloud_sync_title">AWS Cloud Sync ($4.99/month)</string>
+    <string name="cloud_sync_desc">Automatic 24/7 background scraping in the cloud and cross-device sync.</string>
+    <string name="active_badge">Active</string>
+    <string name="subscribe_btn">Subscribe Now</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Application Settings</string>
+    <string name="settings_vehicle_mileage">Vehicle Fuel Usage (L/100km)</string>
+    <string name="settings_gas_price">Local Gas Price ($/L)</string>
+    <string name="settings_time_value">Value of Your Time ($/hour)</string>
+    <string name="share_app_btn">Share App with Family</string>
+    <string name="export_db_btn">Export Local Database</string>
+    <string name="share_app_title">Download Smart Family Grocery List</string>
+    <string name="share_app_msg">Join our family list! Download the app for iOS/Android: https://smartfamilylist.com. Family Key: %s</string>
+</resources>

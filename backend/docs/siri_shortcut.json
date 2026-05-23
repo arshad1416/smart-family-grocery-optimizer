@@ -1,0 +1,37 @@
+{
+  "shortcut_name": "Add to Smart Grocery List",
+  "trigger_phrase": "Hey Siri, add to grocery list",
+  "actions": [
+    {
+      "step": 1,
+      "action_type": "Ask for Input",
+      "prompt": "What grocery item would you like to add?",
+      "input_type": "Text"
+    },
+    {
+      "step": 2,
+      "action_type": "Text",
+      "description": "Construct final phrase",
+      "text_content": "add Provided Input"
+    },
+    {
+      "step": 3,
+      "action_type": "Get Contents of URL",
+      "url": "http://<YOUR_TAILSCALE_OR_MAC_IP>:8000/api/webhooks/smart-home",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "request_body": "JSON",
+      "json_payload": {
+        "device": "siri",
+        "text": "Text from Step 2"
+      }
+    },
+    {
+      "step": 4,
+      "action_type": "Show Result",
+      "text": "Successfully added item to your Family Grocery list."
+    }
+  ]
+}

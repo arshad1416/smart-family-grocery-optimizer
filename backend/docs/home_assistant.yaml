@@ -1,0 +1,38 @@
+# Home Assistant YAML Configurations
+# Add these definitions to your configuration.yaml to connect your dashboard and voice scripts
+
+# 1. Register API webhooks to add items to your list
+rest_command:
+  add_grocery_item:
+    url: "http://<YOUR_PI_OR_MAC_IP>:8000/api/webhooks/smart-home"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    payload: >
+      {
+        "device": "homeassistant",
+        "text": "add {{ item }}"
+      }
+
+# 2. Add an Alexa/Google Assistant script action in Home Assistant
+script:
+  sync_voice_to_grocery_list:
+    alias: "Sync Voice Input to Grocery List"
+    sequence:
+      - service: rest_command.add_grocery_item
+        data:
+          item: "{{ states('input_text.voice_grocery_temp') }}"
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.voice_grocery_temp
+        data:
+          value: ""
+
+# 3. Rest sensor to display your list item counts on your dashboard
+sensor:
+  - platform: rest
+    name: "Grocery List Items"
+    resource: "http://<YOUR_PI_OR_MAC_IP>:8000/api/lists/1/items"
+    value_template: "{{ value_json | length }}"
+    json_attributes_path: "$."
+    scan_interval: 60
