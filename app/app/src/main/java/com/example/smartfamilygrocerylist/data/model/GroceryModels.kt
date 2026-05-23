@@ -82,5 +82,7 @@ data class ScraperStatus(
 data class SearchedStore(
     val name: String,
     val location: String,
-    @SerializedName("distance_km") val distanceKm: Double
+    @SerializedName("distance_km") val distanceKm: Double,
+    val latitude: Double,
+    val longitude: Double
 )
