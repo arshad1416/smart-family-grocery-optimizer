@@ -4,6 +4,7 @@ import com.example.smartfamilygrocerylist.data.model.*
 import okhttp3.ResponseBody
 import retrofit2.http.*
 
+@JvmSuppressWildcards
 interface ApiService {
     @GET("api/stores")
     suspend fun getStores(): List<Store>
