@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -123,94 +124,160 @@ fun GroceryListScreen(
                         )
                     }
 
-                    items(items) { item ->
+                    items(items, key = { it.id }) { item ->
                         // Query the best matched price for this item
                         val trendsList = priceTrendsState[item.itemHash] ?: emptyList()
                         val cheapestStoreProduct = trendsList.minByOrNull { it.currentPrice }
 
-                        val cardBgColor by animateColorAsState(
-                            if (item.isCompleted) Color(0x05FFFFFF) else Color(0x0DFFFFFF)
+                        var showDeleteDialog by remember { mutableStateOf(false) }
+
+                        if (showDeleteDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showDeleteDialog = false },
+                                title = { Text("Delete Item", color = Color.White, fontWeight = FontWeight.Bold) },
+                                text = { Text("Are you sure you want to delete \"${item.encryptedName}\"?", color = Color.LightGray) },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            listViewModel.deleteItem(item)
+                                            showDeleteDialog = false
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444))
+                                    ) {
+                                        Text("Delete", color = Color.White)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showDeleteDialog = false }) {
+                                        Text("Cancel", color = Color.Gray)
+                                    }
+                                },
+                                containerColor = Color(0xFF1E293B)
+                            )
+                        }
+
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { dismissValue ->
+                                when (dismissValue) {
+                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                        listViewModel.toggleItem(item)
+                                        false
+                                    }
+                                    SwipeToDismissBoxValue.EndToStart -> {
+                                        showDeleteDialog = true
+                                        false
+                                    }
+                                    else -> false
+                                }
+                            }
                         )
 
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedItemForDetail = item },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = CardDefaults.cardColors(containerColor = cardBgColor),
-                            border = BorderStroke(1.dp, Color(0x0AFFFFFF))
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                val direction = dismissState.dismissDirection
+                                val backgroundColor = when (direction) {
+                                    SwipeToDismissBoxValue.StartToEnd -> Color(0xFF10B981) // Green
+                                    SwipeToDismissBoxValue.EndToStart -> Color(0xFFEF4444) // Red
+                                    else -> Color.Transparent
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(backgroundColor, RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                        SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                                        else -> Alignment.Center
+                                    }
+                                ) {
+                                    if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = "Check off",
+                                            tint = Color.White
+                                        )
+                                    } else if (direction == SwipeToDismissBoxValue.EndToStart) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier.padding(vertical = 4.dp)
                         ) {
-                            Row(
+                            val cardBgColor by animateColorAsState(
+                                if (item.isCompleted) Color(0x05FFFFFF) else Color(0x0DFFFFFF)
+                            )
+
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .clickable { selectedItemForDetail = item },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = CardDefaults.cardColors(containerColor = cardBgColor),
+                                border = BorderStroke(1.dp, Color(0x0AFFFFFF))
                             ) {
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Checkbox(
-                                        checked = item.isCompleted,
-                                        onCheckedChange = { listViewModel.toggleItem(item) },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xFF10B981),
-                                            uncheckedColor = Color.Gray
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Column {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Text(
-                                                text = item.encryptedName,
-                                                color = if (item.isCompleted) Color.Gray else Color.White,
-                                                fontWeight = FontWeight.SemiBold,
-                                                fontSize = 14.sp,
-                                                textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Checkbox(
+                                            checked = item.isCompleted,
+                                            onCheckedChange = { listViewModel.toggleItem(item) },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = Color(0xFF10B981),
+                                                uncheckedColor = Color.Gray
                                             )
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Column {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = item.encryptedName,
+                                                    color = if (item.isCompleted) Color.Gray else Color.White,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 14.sp,
+                                                    textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                                )
+                                                if (cheapestStoreProduct != null && !item.isCompleted) {
+                                                    Text(
+                                                        text = "-\$${cheapestStoreProduct.currentPrice}",
+                                                        color = Color(0xFF10B981),
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 14.sp
+                                                    )
+                                                }
+                                            }
                                             if (cheapestStoreProduct != null && !item.isCompleted) {
                                                 Text(
-                                                    text = "-\$${cheapestStoreProduct.currentPrice}",
-                                                    color = Color(0xFF10B981),
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 14.sp
+                                                    text = cheapestStoreProduct.storeName,
+                                                    color = Color(0xFF818CF8),
+                                                    fontWeight = FontWeight.Medium,
+                                                    fontSize = 11.sp
+                                                )
+                                            }
+                                            if (item.addedBy != null && !item.isCompleted) {
+                                                Text(
+                                                    text = "Added by: ${item.addedBy}",
+                                                    color = Color.DarkGray,
+                                                    fontSize = 10.sp
                                                 )
                                             }
                                         }
-                                        if (cheapestStoreProduct != null && !item.isCompleted) {
-                                            Text(
-                                                text = cheapestStoreProduct.storeName,
-                                                color = Color(0xFF818CF8),
-                                                fontWeight = FontWeight.Medium,
-                                                fontSize = 11.sp
-                                            )
-                                        }
-                                        if (item.addedBy != null && !item.isCompleted) {
-                                            Text(
-                                                text = "Added by: ${item.addedBy}",
-                                                color = Color.DarkGray,
-                                                fontSize = 10.sp
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Delete Item
-                                    IconButton(
-                                        onClick = { listViewModel.deleteItem(item) },
-                                        modifier = Modifier.size(24.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = "Delete Item",
-                                            tint = Color(0xFFEF4444),
-                                            modifier = Modifier.size(16.dp)
-                                        )
                                     }
                                 }
                             }
