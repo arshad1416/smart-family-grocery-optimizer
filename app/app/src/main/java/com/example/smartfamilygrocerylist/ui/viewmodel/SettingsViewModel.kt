@@ -50,7 +50,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         // Initialize Retrofit base URL and auth token from preferences
         RetrofitClient.setBaseUrl(_serverUrl.value)
         if (_encryptionKey.value.isNotEmpty()) {
-            val token = Tokenizer.tokenize(_encryptionKey.value)
+            val token = Tokenizer.hashPassphrase(_encryptionKey.value)
             RetrofitClient.setAuthToken(token)
         }
     }
@@ -59,7 +59,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _encryptionKey.value = key
         prefs.saveString("encryption_key", key)
         
-        val token = Tokenizer.tokenize(key)
+        val token = Tokenizer.hashPassphrase(key)
         RetrofitClient.setAuthToken(token)
         
         if (registerOnServer && key.isNotEmpty()) {
