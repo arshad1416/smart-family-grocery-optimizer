@@ -156,6 +156,14 @@ async def startup_event():
     # Seed database with stores and prices if empty
     session = db.SessionLocal()
     try:
+        # Ensure default grocery list with ID = 1 exists
+        default_list = session.query(db.GroceryList).filter(db.GroceryList.id == 1).first()
+        if not default_list:
+            default_list = db.GroceryList(id=1, name="Family Grocery List")
+            session.add(default_list)
+            session.commit()
+            logger.info("Seeded default family grocery list with ID 1")
+            
         store_count = session.query(db.Store).count()
         if store_count == 0:
             logger.info("Initializing SQLite seed database with Ontario stores and price catalogs...")
