@@ -161,13 +161,34 @@ fun GroceryListScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Column {
-                                        Text(
-                                            text = item.encryptedName,
-                                            color = if (item.isCompleted) Color.Gray else Color.White,
-                                            fontWeight = FontWeight.SemiBold,
-                                            fontSize = 14.sp,
-                                            textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                text = item.encryptedName,
+                                                color = if (item.isCompleted) Color.Gray else Color.White,
+                                                fontWeight = FontWeight.SemiBold,
+                                                fontSize = 14.sp,
+                                                textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                            )
+                                            if (cheapestStoreProduct != null && !item.isCompleted) {
+                                                Text(
+                                                    text = "-\$${cheapestStoreProduct.currentPrice}",
+                                                    color = Color(0xFF10B981),
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontSize = 14.sp
+                                                )
+                                            }
+                                        }
+                                        if (cheapestStoreProduct != null && !item.isCompleted) {
+                                            Text(
+                                                text = cheapestStoreProduct.storeName,
+                                                color = Color(0xFF818CF8),
+                                                fontWeight = FontWeight.Medium,
+                                                fontSize = 11.sp
+                                            )
+                                        }
                                         if (item.addedBy != null && !item.isCompleted) {
                                             Text(
                                                 text = "Added by: ${item.addedBy}",
@@ -179,26 +200,6 @@ fun GroceryListScreen(
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    // Matched Store Badge
-                                    if (cheapestStoreProduct != null && !item.isCompleted) {
-                                        SuggestionChip(
-                                            onClick = { selectedItemForDetail = item },
-                                            label = {
-                                                Text(
-                                                    text = "${cheapestStoreProduct.storeName.split(" ")[0]}: \$${cheapestStoreProduct.currentPrice}",
-                                                    fontSize = 9.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            },
-                                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                                containerColor = Color(0x1F10B981),
-                                                labelColor = Color(0xFF10B981)
-                                            ),
-                                            border = BorderStroke(1.dp, Color(0x3310B981))
-                                        )
-                                        Spacer(modifier = Modifier.width(12.dp))
-                                    }
-                                    
                                     // Delete Item
                                     IconButton(
                                         onClick = { listViewModel.deleteItem(item) },

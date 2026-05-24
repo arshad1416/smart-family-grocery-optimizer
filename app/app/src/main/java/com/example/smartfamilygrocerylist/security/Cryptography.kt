@@ -15,6 +15,13 @@ object Cryptography {
     private const val IV_LENGTH = 12 // GCM standard IV size
     private const val TAG_LENGTH_BIT = 128
 
+    private val keyCache = java.util.concurrent.ConcurrentHashMap<String, SecretKeySpec>()
+
+    private val STATIC_SALT = ByteArray(SALT_LENGTH).apply {
+        val label = "SmartGrocerySalt2026".toByteArray(Charsets.UTF_8)
+        label.copyInto(this, 0, 0, kotlin.math.min(SALT_LENGTH, label.size))
+    }
+
     /**
      * Derives a SecretKeySpec from a human-readable passphrase using PBKDF2.
      */
@@ -25,6 +32,13 @@ object Cryptography {
         return SecretKeySpec(tmp.encoded, "AES")
     }
 
+    private fun deriveKeyCached(passphrase: String, salt: ByteArray): SecretKeySpec {
+        val cacheKey = passphrase + ":" + Base64Compat.encodeToString(salt, 2)
+        return keyCache.getOrPut(cacheKey) {
+            deriveKey(passphrase, salt)
+        }
+    }
+
     /**
      * Encrypts plain text using AES-256-GCM.
      * Returns a Base64 encoded string containing the salt, iv, and cipher text.
@@ -33,15 +47,14 @@ object Cryptography {
         if (passphrase.isEmpty()) return plainText
         
         try {
-            // Generate random salt and IV
+            // Generate random IV and use static salt
             val random = SecureRandom()
-            val salt = ByteArray(SALT_LENGTH)
-            random.nextBytes(salt)
+            val salt = STATIC_SALT
             val iv = ByteArray(IV_LENGTH)
             random.nextBytes(iv)
 
-            // Derive key
-            val keySpec = deriveKey(passphrase, salt)
+            // Derive key using cache
+            val keySpec = deriveKeyCached(passphrase, salt)
 
             // Configure cipher
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -95,8 +108,8 @@ object Cryptography {
             System.arraycopy(packed, SALT_LENGTH, iv, 0, IV_LENGTH)
             System.arraycopy(packed, SALT_LENGTH + IV_LENGTH, cipherText, 0, cipherTextSize)
 
-            // Derive key using extracted salt
-            val keySpec = deriveKey(passphrase, salt)
+            // Derive key using cache
+            val keySpec = deriveKeyCached(passphrase, salt)
 
             // Configure cipher
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
